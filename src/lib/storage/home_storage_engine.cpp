@@ -89,6 +89,10 @@ void HomeStateMachineStore::free_pba(pba_t) {
     // TODO: Implementation pending
 }
 
+uint32_t HomeStateMachineStore::pba_size(pba_t pba) const {
+    // TODO: Implementation pending
+}
+
 //////////////// StateMachine Superblock/commit update section /////////////////////////////
 void HomeStateMachineStore::commit_lsn(repl_lsn_t lsn) {
     folly::SharedMutexWritePriority::ReadHolder holder(m_sb_lock);

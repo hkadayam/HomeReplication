@@ -177,6 +177,14 @@ bool ReplicaStateMachine::async_fetch_write_pbas(const std::vector< fully_qualif
     return false;
 }
 
+void ReplicaStateMachine::handle_compaction(repl_lsn_t start_lsn, repl_lsn_t end_lsn) {
+    m_state_store->get_free_pba_records(start_lsn, end_lsn, [](repl_lsn_t lsn, const pba_list_t& pbas) {
+        for (const auto& pba : pbas) {
+            m_state_store->free_pba(pba);
+        }
+    });
+}
+
 void ReplicaStateMachine::create_snapshot(nuraft::snapshot& s, nuraft::async_result< bool >::handler_type& when_done) {
     RS_LOG(DEBUG, "create_snapshot {}/{}", s.get_last_log_idx(), s.get_last_log_term());
     auto null_except = std::shared_ptr< std::exception >();

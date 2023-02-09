@@ -72,6 +72,11 @@ public:
         }
     }
 
+    bool compact(ulong last_log_index) override {
+        m_sm->handle_compaction(start_index(), last_log_index);
+        LogStoreImplT::compact(last_log_index);
+    }
+
 private:
     ReplicaSet* m_rs{nullptr};
     ReplicaStateMachine* m_sm{nullptr};

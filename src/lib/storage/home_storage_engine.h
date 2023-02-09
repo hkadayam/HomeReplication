@@ -37,6 +37,7 @@ public:
     void async_write(const sisl::sg_list& sgs, const pba_list_t& in_pbas, const io_completion_cb_t& cb) override;
     void async_read(pba_t pba, sisl::sg_list& sgs, uint32_t size, const io_completion_cb_t& cb) override;
     void free_pba(pba_t pba) override;
+    uint32_t pba_size(pba_t pba) const override;
 
     //////////////////// Control operations ///////////////////////////////
     void destroy() override;

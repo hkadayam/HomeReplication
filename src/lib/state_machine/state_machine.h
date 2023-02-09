@@ -84,6 +84,7 @@ public:
     ~ReplicaStateMachine() override = default;
     ReplicaStateMachine(ReplicaStateMachine const&) = delete;
     ReplicaStateMachine& operator=(ReplicaStateMachine const&) = delete;
+    StateMachineStore& state_store() { return *m_state_store; }
 
     /// NuRaft overrides
     uint64_t last_commit_index() override;
