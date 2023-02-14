@@ -97,6 +97,7 @@ private:
     rs_ptr_t create_replica_set(uuid_t const uuid);
     void on_replica_store_found(uuid_t const uuid, const std::shared_ptr< StateMachineStore >& sm_store,
                                 const std::shared_ptr< nuraft::log_store >& log_store);
+    void on_journal_replay_completed(ReplicaSet*);
 
 private:
     std::unique_ptr< ReplicationServiceBackend > m_backend;

@@ -151,6 +151,17 @@ public:
         }
     }
 
+    void validate_recovered_log(int64_t lsn, const raft_buf_ptr_t& buf) {
+        buf->pos(0);
+        auto bytes = buf->get_raw(buf->size());
+
+        ASSERT_EQ(buf->size() - 1, m_shadow_log[lsn - 1].size())
+            << "Size from recovered log and shadow mismatch for lsn=" << lsn;
+        ASSERT_EQ(std::string(r_cast< const char* >(bytes), buf->size() - 1), m_shadow_log[lsn - 1])
+            << "Recovered Log entry mismatch for lsn=" << lsn;
+        buf->pos(0);
+    }
+
 private:
     nuraft::ptr< nuraft::log_entry > make_log(uint64_t term, uint64_t lsn) {
         auto val = gen_random_string(g_randlogsize_generator(g_re), term);
@@ -238,6 +249,9 @@ public:
             .before_init_devices([this]() {
                 m_leader_store.m_rls = std::make_unique< HomeRaftLogStore >(m_leader_store.m_store_id);
                 m_follower_store.m_rls = std::make_unique< HomeRaftLogStore >(m_follower_store.m_store_id);
+                m_leader_store.m_rls->enable_auto_recovery(
+                    [this](int64_t lsn, const raft_buf_ptr_t& buf) { m_leader_store.validate_recovered_log(lsn, buf); },
+                    nullptr);
             })
             .init(true /* wait_for_init */);
 

@@ -45,6 +45,8 @@ public:
     ////////////////// State machine and free pba persistence ///////////////////
     void commit_lsn(repl_lsn_t lsn) override;
     repl_lsn_t get_last_commit_lsn() const override;
+    bool is_replay_needed(repl_lsn_t lsn) const override;
+
     void add_free_pba_record(repl_lsn_t lsn, const pba_list_t& pbas) override;
     void get_free_pba_records(repl_lsn_t start_lsn, repl_lsn_t end_lsn,
                               const std::function< void(repl_lsn_t, const pba_list_t&) >& cb) override;

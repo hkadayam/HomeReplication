@@ -83,7 +83,27 @@ void HomeRaftLogStore::remove_store() {
 void HomeRaftLogStore::on_store_created(std::shared_ptr< HomeLogStore > log_store) {
     m_log_store = log_store;
     m_logstore_id = m_log_store->get_store_id();
+    m_log_store->register_log_found_cb(bind_this(HomeRaftLogStore::on_log_found, 3));
+    m_log_store->register_log_replay_done_cb(bind_this(HomeRaftLogStore::on_log_replay_done, 2));
     REPL_STORE_LOG(DEBUG, "Home Log store created/opened successfully");
+}
+
+void HomeRaftLogStore::enable_auto_recovery(raft_log_found_cb_t found_cb, raft_log_replay_done_cb_t done_cb) {
+    m_raft_log_found_cb = std::move(found_cb);
+    m_raft_log_replay_done_cb = std::move(done_cb);
+}
+
+void HomeRaftLogStore::on_log_found(store_lsn_t lsn, homestore::log_buffer buf, void*) {
+    if (m_raft_log_found_cb) {
+        nuraft::ptr< nuraft::log_entry > nle = to_nuraft_log_entry(buf);
+        if (nle->get_val_type() == nuraft::log_val_type::app_log) {
+            m_raft_log_found_cb(to_repl_lsn(lsn), nle->get_buf_ptr());
+        }
+    }
+}
+
+void HomeRaftLogStore::on_log_replay_done(std::shared_ptr< HomeLogStore >, store_lsn_t lsn) {
+    if (m_raft_log_replay_done_cb) { m_raft_log_replay_done_cb(to_repl_lsn(lsn)); }
 }
 
 ulong HomeRaftLogStore::next_slot() const {

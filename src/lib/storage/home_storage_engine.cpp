@@ -89,8 +89,9 @@ void HomeStateMachineStore::free_pba(pba_t) {
     // TODO: Implementation pending
 }
 
-uint32_t HomeStateMachineStore::pba_size(pba_t pba) const {
+uint32_t HomeStateMachineStore::pba_size(pba_t) const {
     // TODO: Implementation pending
+    return 0;
 }
 
 //////////////// StateMachine Superblock/commit update section /////////////////////////////
@@ -102,6 +103,11 @@ void HomeStateMachineStore::commit_lsn(repl_lsn_t lsn) {
 repl_lsn_t HomeStateMachineStore::get_last_commit_lsn() const {
     folly::SharedMutexWritePriority::ReadHolder holder(m_sb_lock);
     return m_sb_in_mem.commit_lsn;
+}
+
+bool HomeStateMachineStore::is_replay_needed(repl_lsn_t lsn) const {
+    folly::SharedMutexWritePriority::ReadHolder holder(m_sb_lock);
+    return ((lsn > m_sb_in_mem.m_checkpoint_lsn) && (lsn <= m_sb_in_mem.commit_lsn));
 }
 
 void HomeStateMachineStore::start_sb_flush_timer() {

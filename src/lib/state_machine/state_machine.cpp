@@ -118,6 +118,25 @@ void ReplicaStateMachine::check_and_commit(repl_req* req) {
 
 uint64_t ReplicaStateMachine::last_commit_index() { return uint64_cast(m_state_store->get_last_commit_lsn()); }
 
+void ReplicaStateMachine::on_recovery_log_found(int64_t lsn, const raft_buf_ptr_t& raft_buf) {
+    // Check with the storage engine, (which maintains the commit lsns) if we needed to do replay this entry. Typically
+    // storage engine, returns true for cases where lsn is committed but actual data is not purged into its final
+    // destination yet.
+    if (m_state_store->is_replay_needed(lsn)) {
+        repl_journal_entry* entry = r_cast< repl_journal_entry* >(raft_buf->data_begin());
+        auto header =
+            sisl::blob{uintptr_cast(raft_buf->data_begin()) + sizeof(repl_journal_entry), entry->user_header_size};
+        auto key = sisl::blob{header.bytes + header.size, entry->key_size};
+
+        pba_list_t local_pbas;
+        pba_t* raw_pba_list = r_cast< pba_t* >(key.bytes + key.size);
+        for (uint16_t i{0}; i < entry->n_pbas; ++i) {
+            local_pbas.push_back(raw_pba_list[i]);
+        }
+        m_rs->m_listener->on_commit(lsn, header, key, local_pbas, nullptr /* user_ctx */);
+    }
+}
+
 repl_req* ReplicaStateMachine::transform_journal_entry(const raft_buf_ptr_t& raft_buf) {
     // Leader has nothing to transform or process
     if (m_rs->is_leader()) { return nullptr; }
@@ -178,7 +197,7 @@ bool ReplicaStateMachine::async_fetch_write_pbas(const std::vector< fully_qualif
 }
 
 void ReplicaStateMachine::handle_compaction(repl_lsn_t start_lsn, repl_lsn_t end_lsn) {
-    m_state_store->get_free_pba_records(start_lsn, end_lsn, [](repl_lsn_t lsn, const pba_list_t& pbas) {
+    m_state_store->get_free_pba_records(start_lsn, end_lsn, [this](repl_lsn_t, const pba_list_t& pbas) {
         for (const auto& pba : pbas) {
             m_state_store->free_pba(pba);
         }

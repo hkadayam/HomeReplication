@@ -9,7 +9,6 @@
 namespace home_replication {
 
 typedef std::function< void(int status, void* cookie) > io_completion_cb_t;
-using repl_lsn_t = int64_t;
 
 class StateMachineStore {
 public:
@@ -26,6 +25,8 @@ public:
     ////////////////// State machine and free pba persistence ///////////////////
     virtual void commit_lsn(repl_lsn_t lsn) = 0;
     virtual repl_lsn_t get_last_commit_lsn() const = 0;
+    virtual bool is_replay_needed(repl_lsn_t lsn) const = 0;
+
     virtual void add_free_pba_record(repl_lsn_t lsn, const pba_list_t& pbas) = 0;
     virtual void get_free_pba_records(repl_lsn_t from_lsn, repl_lsn_t to_lsn,
                                       const std::function< void(repl_lsn_t lsn, const pba_list_t& pba) >& cb) = 0;

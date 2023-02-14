@@ -14,6 +14,8 @@ namespace home_replication {
 using pba_t = uint64_t;
 using pba_list_t = folly::small_vector< pba_t, 4 >;
 using uuid_t = boost::uuids::uuid;
+using repl_lsn_t = int64_t;
+using store_lsn_t = int64_t;
 
 // Fully qualified domain pba, unique pba id across replica set
 struct fully_qualified_pba {

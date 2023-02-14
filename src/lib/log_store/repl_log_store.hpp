@@ -5,6 +5,9 @@
 #include "log_store/journal_entry.h"
 
 namespace home_replication {
+using raft_log_found_cb_t = std::function< void(int64_t, const raft_buf_ptr_t&) >;
+using raft_log_replay_done_cb_t = std::function< void(int64_t) >;
+
 template < typename LogStoreImplT >
 class ReplicaLogStore : public LogStoreImplT {
 public:
@@ -73,8 +76,12 @@ public:
     }
 
     bool compact(ulong last_log_index) override {
-        m_sm->handle_compaction(start_index(), last_log_index);
-        LogStoreImplT::compact(last_log_index);
+        m_sm->handle_compaction(LogStoreImplT::start_index(), last_log_index);
+        return LogStoreImplT::compact(last_log_index);
+    }
+
+    void enable_auto_recovery(raft_log_found_cb_t found_cb, raft_log_replay_done_cb_t done_cb) override {
+        LogStoreImplT::enable_auto_recovery(std::move(found_cb), std::move(done_cb));
     }
 
 private:

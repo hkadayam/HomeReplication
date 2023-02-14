@@ -89,6 +89,10 @@ void ReplicationService::on_replica_store_found(uuid_t const uuid, const std::sh
     m_backend->link_log_store_to_replica_set(log_store.get(), it->second.get());
 }
 
+void ReplicationService::on_journal_replay_completed(ReplicaSet*) {
+    // TODO: Join RAFT Group here
+}
+
 void ReplicationService::iterate_replica_sets(const std::function< void(const rs_ptr_t&) >& cb) {
     std::unique_lock lg(m_rs_map_mtx);
     for (const auto& [uuid, rs] : m_rs_map) {

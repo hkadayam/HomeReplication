@@ -37,6 +37,15 @@ std::shared_ptr< nuraft::log_store > HomeReplicationBackend::create_log_store() 
 }
 
 void HomeReplicationBackend::link_log_store_to_replica_set(nuraft::log_store* ls, ReplicaSet* rs) {
-    r_cast< ReplicaLogStore< HomeRaftLogStore >* >(ls)->attach_replica_set(rs);
+    auto* repl_log_store = r_cast< ReplicaLogStore< HomeRaftLogStore >* >(ls);
+    repl_log_store->attach_replica_set(rs);
+
+    using namespace std::placeholders;
+    repl_log_store->enable_auto_recovery(
+        [rs](int64_t lsn, const raft_buf_ptr_t& raft_buf) {
+            std::dynamic_pointer_cast< ReplicaStateMachine >(rs->get_state_machine())
+                ->on_recovery_log_found(lsn, raft_buf);
+        },
+        [this, rs](int64_t) { m_svc->on_journal_replay_completed(rs); });
 }
 } // namespace home_replication

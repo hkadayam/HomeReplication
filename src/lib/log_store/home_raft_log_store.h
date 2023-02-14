@@ -29,9 +29,9 @@
 
 namespace home_replication {
 
-using store_lsn_t = int64_t;
-using repl_lsn_t = int64_t;
 using raft_buf_ptr_t = nuraft::ptr< nuraft::buffer >;
+using raft_log_found_cb_t = std::function< void(int64_t, const raft_buf_ptr_t&) >;
+using raft_log_replay_done_cb_t = std::function< void(int64_t) >;
 
 class HomeRaftLogStore : public nuraft::log_store {
 public:
@@ -165,12 +165,20 @@ public:
      */
     virtual ulong last_durable_index() override;
 
+    //////////////////////// Non-overridden methods ////////////////////////////////
     homestore::logstore_id_t logstore_id() const { return m_logstore_id; }
+    virtual void enable_auto_recovery(raft_log_found_cb_t found_cb, raft_log_replay_done_cb_t done_cb);
+
+private:
+    void on_log_found(store_lsn_t lsn, homestore::log_buffer buf, void* ctx);
+    void on_log_replay_done(std::shared_ptr< homestore::HomeLogStore > store, store_lsn_t lsn);
 
 private:
     homestore::logstore_id_t m_logstore_id;
     std::shared_ptr< homestore::HomeLogStore > m_log_store;
     nuraft::ptr< nuraft::log_entry > m_dummy_log_entry;
     store_lsn_t m_last_durable_lsn{-1};
+    raft_log_found_cb_t m_raft_log_found_cb;
+    raft_log_replay_done_cb_t m_raft_log_replay_done_cb;
 };
 } // namespace home_replication
